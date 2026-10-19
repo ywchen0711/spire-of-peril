@@ -119,15 +119,46 @@ const endTouch = (e) => { for (const t of e.changedTouches) { if (t.identifier =
 canvas.addEventListener('touchend', endTouch); canvas.addEventListener('touchcancel', endTouch);
 $('jumpbtn').addEventListener('touchstart', (e) => { e.preventDefault(); touch.jump = true; }, { passive: false });
 $('jumpbtn').addEventListener('touchend', () => { touch.jump = false; });
+// ---------------------------------------------------------------- game controllers (standard mapping, Xbox names)
+// left stick / D-pad move · right stick camera · A jump · X shift lock · LB / RB zoom · View reset · Start shop · B close
+const PAD = { ix: 0, iz: 0, jump: false, prev: [], connected: false };
+const DEAD = 0.18, dz = (v) => (Math.abs(v) < DEAD ? 0 : (v - Math.sign(v) * DEAD) / (1 - DEAD));
+addEventListener('gamepadconnected', (e) => { PAD.connected = true; sound.start(); toast(L(`已連接控制器：${e.gamepad.id.split('(')[0].trim()}`, `Controller connected: ${e.gamepad.id.split('(')[0].trim()}`)); staticText(); });
+addEventListener('gamepaddisconnected', () => { PAD.connected = [...(navigator.getGamepads ? navigator.getGamepads() : [])].some(Boolean); toast(L('控制器已中斷', 'Controller disconnected')); });
+function pollPad(dt) {
+  const pads = navigator.getGamepads ? [...navigator.getGamepads()].filter(Boolean) : [];
+  PAD.ix = 0; PAD.iz = 0; PAD.jump = false;
+  const gp = pads[0]; if (!gp) return;
+  const b = (i) => !!(gp.buttons[i] && gp.buttons[i].pressed), pressed = (i) => b(i) && !PAD.prev[i];
+  // moving: the stick, or the D-pad
+  PAD.ix = dz(gp.axes[0] || 0) + (b(15) ? 1 : 0) - (b(14) ? 1 : 0);
+  PAD.iz = -dz(gp.axes[1] || 0) + (b(12) ? 1 : 0) - (b(13) ? 1 : 0);
+  PAD.jump = b(0);
+  // the camera
+  const cx = dz(gp.axes[2] || 0), cy = dz(gp.axes[3] || 0);
+  cam.yaw -= cx * 2.8 * dt; cam.pitch = Math.max(-0.4, Math.min(1.3, cam.pitch + cy * 1.8 * dt));
+  if (b(4)) cam.dist = Math.min(24, cam.dist * (1 + dt * 1.5)); if (b(5)) cam.dist = Math.max(3, cam.dist * (1 - dt * 1.5));
+  // buttons that do something once per press, depending on the screen
+  const shopOpen = !$('shop').hidden, winOpen = !$('winbox').hidden;
+  if (shopOpen) { if (pressed(1) || pressed(9)) $('shop').querySelector('.close').click(); }
+  else if (G.mode === 'title') { if (pressed(0) || pressed(9)) play(); }
+  else if (winOpen) { if (pressed(0)) $('w-next').click(); else if (pressed(2)) $('w-again').click(); else if (pressed(9)) showShop(); }
+  else if (G.mode === 'play') {
+    if (pressed(2)) { cam.lock = !cam.lock; toast(cam.lock ? L('視角鎖定：開', 'Shift lock: on') : L('視角鎖定：關', 'Shift lock: off')); }
+    if (pressed(8) && G.deadT <= 0) G.pl.dead = 'reset';
+    if (pressed(9)) showShop();
+  }
+  PAD.prev = gp.buttons.map((x) => x.pressed);
+}
 function readInput() {
-  let ix = 0, iz = 0;
+  let ix = PAD.ix, iz = PAD.iz;
   if (keys.has('KeyW') || keys.has('ArrowUp')) iz += 1; if (keys.has('KeyS') || keys.has('ArrowDown')) iz -= 1;
   if (keys.has('KeyA') || keys.has('ArrowLeft')) ix -= 1; if (keys.has('KeyD') || keys.has('ArrowRight')) ix += 1;
   if (touch.id !== null) { ix += touch.x; iz -= touch.y; }
   const len = Math.hypot(ix, iz); if (len > 1) { ix /= len; iz /= len; }
   // forward is where the camera looks
   const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
-  return { mx: fx * iz + rx * ix, mz: fz * iz + rz * ix, jump: keys.has('Space') || touch.jump };
+  return { mx: fx * iz + rx * ix, mz: fz * iz + rz * ix, jump: keys.has('Space') || touch.jump || PAD.jump };
 }
 
 // ---------------------------------------------------------------- HUD and screens
@@ -151,7 +182,8 @@ function staticText() {
   document.title = L('絕命高塔 · Spire of Peril', 'Spire of Peril · 絕命高塔');
   $('t-play').textContent = L('開始攀爬', 'Climb'); $('t-shop').textContent = L('商店', 'Shop'); $('t-lang').textContent = EN() ? '中文' : 'English';
   $('t-sub').textContent = L('沒有存檔點。踩到紅色就從頭來過。在時間用完之前爬到塔頂！', 'No checkpoints. Touch red and you start again from the bottom. Reach the top before time runs out!');
-  $('t-help').innerHTML = L('WASD 移動 · 空白鍵 跳 · 拖曳滑鼠 轉視角 · 滾輪 縮放 · Shift 鎖定視角 · R 重來', 'WASD move · Space jump · drag to look · wheel to zoom · Shift lock · R reset');
+  $('t-help').innerHTML = PAD.connected ? L('控制器：左搖桿 移動 · A 跳 · 右搖桿 視角 · LB/RB 縮放 · X 鎖定視角 · View 重來 · Start 商店', 'Controller: left stick move · A jump · right stick look · LB/RB zoom · X shift lock · View reset · Start shop')
+    : L('WASD 移動 · 空白鍵 跳 · 拖曳滑鼠 轉視角 · 滾輪 縮放 · Shift 鎖定視角 · R 重來 · 也可以用控制器', 'WASD move · Space jump · drag to look · wheel to zoom · Shift lock · R reset');
   $('t-best').textContent = SAVE.best ? `${L('最佳紀錄', 'Best')} ${fmtTime(SAVE.best)} · ${L('登頂', 'Wins')} ${SAVE.wins}` : '';
   $('shopbtn').textContent = L('🛒 商店', '🛒 Shop'); $('practice').textContent = L('練習模式', 'Practice');
 }
@@ -201,6 +233,7 @@ function burst(x, y, z) {
 let last = performance.now(), tickSec = -1;
 function frame(now) {
   const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  pollPad(dt);
   if (G.tower) {
     G.t += dt;
     G.world = worldAt(G.tower, G.t, G.world, G.fades);

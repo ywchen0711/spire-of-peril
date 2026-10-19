@@ -40,6 +40,9 @@ time) and outfit colours. **Practice mode** turns every stage into a checkpoint 
 | Shift | shift lock (the camera stays behind you) |
 | R | reset |
 
+**Controller** (any standard gamepad): left stick or D-pad move, A jump, right stick camera, LB / RB zoom, X shift lock, View reset,
+Start shop (B closes it). On the title screen A starts; on the win screen A climbs a new tower and X climbs the same one again.
+
 On a phone: the left half of the screen is a stick, drag the right half to look, and the yellow button jumps.
 
 ## Files
