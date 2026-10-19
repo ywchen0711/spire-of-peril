@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>絕命高塔 · Spire of Peril</title>
+  <meta name="description" content="沒有存檔點的障礙高塔：在時間用完之前爬到塔頂。 A tower of obstacle courses with no checkpoints: reach the top before time runs out.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=1">
+  <script type="importmap">
+    { "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <div id="title">
+    <div class="logo"><span class="zh">絕命高塔</span><span class="en">SPIRE OF PERIL</span></div>
+    <p id="t-sub"></p>
+    <div class="row"><button id="t-play" class="go big"></button><button id="t-shop"></button><button id="t-lang"></button></div>
+    <p id="t-best"></p>
+    <p id="t-help" class="help"></p>
+  </div>
+
+  <div id="hud" hidden>
+    <div id="timer">8:00</div>
+    <div id="stage"></div>
+    <div id="mut" hidden></div>
+    <div id="side"><span class="coin">● <b id="coins">0</b></span><span id="runt"></span><button id="shopbtn"></button><button id="practice"></button><button id="musicbtn">♪</button></div>
+    <div id="meter"></div>
+    <div id="stick" hidden><div id="knob"></div></div>
+    <button id="jumpbtn">⤒</button>
+  </div>
+  <div id="banner"></div>
+  <div id="toast"></div>
+  <div id="hurt"></div>
+  <div id="winbox" class="panel" hidden></div>
+  <div id="shop" hidden></div>
+
+  <script type="module" src="js/main.js?v=1"></script>
+  <script src="/hub.js" data-pos="top-left" defer></script>
+</body>
+</html>
